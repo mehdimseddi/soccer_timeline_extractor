@@ -22,7 +22,8 @@
 6.  [Preparing Your Input](#preparing-your-input)
 7.  [Using the CLI](#using-the-cli)
 8.  [Using the API Server](#using-the-api-server)
-9.  [Development Notes](#development-notes)
+9.  [Using the Frontend](#using-the-frontend)
+10. [Development Notes](#development-notes)
 
 ## Prerequisites
 
@@ -242,6 +243,9 @@ These tables are filled as the application analyzes commentary and saves the str
 
 Together, these tables form the backbone for both recognizing entities within commentary and persisting the structured output of each analysis.
 
+![Database Schema Class Diagram](foot_class_diagram.svg)
+*UML Class Diagram of the Soccer Commentary Analyzer Database Schema*
+
 ## Preparing Your Input
 
 The application accepts input in three main ways:
@@ -301,6 +305,61 @@ The FastAPI backend provides a RESTful API for programmatic access and integrati
           ```bash
           curl -X POST "http://localhost:8000/v1/analyze-media" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@/path/to/your/audio.mp3" -F "home_team_id=1" -F "away_team_id=2"
           ```
+
+## Using the Frontend
+
+The project includes a modern React frontend with TypeScript and Vite for analyzing soccer commentaries through an intuitive web interface.
+
+1.  **Navigate to the Frontend Directory:**
+
+    ```bash
+    cd match-frontend
+    ```
+
+2.  **Install Dependencies:**
+
+    ```bash
+    npm install
+    ```
+
+3.  **Configure Environment Variables:**
+
+    Copy the example environment file and modify it if needed:
+    ```bash
+    cp .env.example .env
+    ```
+    
+    By default, the frontend is configured to connect to the backend API at `http://localhost:8000` with the API prefix `/v1`. If you need to change this (e.g., for production deployment), you can set these environment variables in your `.env` file:
+    ```env
+    VITE_API_BASE_URL=http://localhost:8000
+    VITE_API_PREFIX=/v1
+    ```
+
+4.  **Start the Development Server:**
+
+    ```bash
+    npm run dev
+    ```
+    
+    This will start the frontend development server, typically on `http://localhost:5173`.
+
+5.  **Build for Production:**
+
+    When you're ready to deploy the frontend:
+    ```bash
+    npm run build
+    ```
+    
+    This will create an optimized production build in the `dist` directory.
+
+6.  **Preview the Production Build:**
+
+    To preview the production build locally:
+    ```bash
+    npm run preview
+    ```
+
+**Note:** Make sure the backend API server is running on `http://localhost:8000` (or your configured URL) when using the frontend, as the frontend communicates with the backend to perform analyses.
 
 ## Workflow Highlights Summary
 

@@ -71,7 +71,7 @@ def build_soccer_analysis_graph():
     workflow.add_edge("process_segments", "sync_events_with_final_players")
     workflow.add_edge("sync_events_with_final_players", "deduplicate_events")
     workflow.add_edge("deduplicate_events", "validate_analysis")
-    workflow.add_conditional_edges("validate_analysis", should_retry_validation, {"retry": "process_segments", "done": "review_analysis"})
+    workflow.add_conditional_edges("validate_analysis", should_retry_validation, {"retry": "process_segments", "done": "final_deduplicate_events"})
 
     # Route based on reviewer decision
     def should_after_review(state: CommentaryState) -> str:
