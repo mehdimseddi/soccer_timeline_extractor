@@ -1,0 +1,71 @@
+-- enums
+CREATE TABLE IF NOT EXISTS EventType (
+    code TEXT PRIMARY KEY,
+    description TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS PlayerPosition (
+    code TEXT PRIMARY KEY,
+    description TEXT NOT NULL
+);
+
+-- core tables
+CREATE TABLE IF NOT EXISTS Team (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS Player (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS PlayerTeam (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_id INTEGER NOT NULL,
+    team_id INTEGER NOT NULL,
+    FOREIGN KEY (player_id) REFERENCES Player(id),
+    FOREIGN KEY (team_id) REFERENCES Team(id),
+    UNIQUE(player_id, team_id)
+);
+
+CREATE TABLE IF NOT EXISTS Match (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    home_team_id INTEGER NOT NULL,
+    away_team_id INTEGER NOT NULL,
+    home_score INTEGER DEFAULT 0,
+    away_score INTEGER DEFAULT 0,
+    match_date DATETIME NOT NULL,
+    FOREIGN KEY (home_team_id) REFERENCES Team(id),
+    FOREIGN KEY (away_team_id) REFERENCES Team(id)
+);
+
+CREATE TABLE IF NOT EXISTS MatchLineup (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER NOT NULL,
+    player_id INTEGER NOT NULL,
+    team_id INTEGER NOT NULL,
+    jersey_number TEXT,
+    position_code TEXT,
+    FOREIGN KEY (match_id) REFERENCES Match(id),
+    FOREIGN KEY (player_id) REFERENCES Player(id),
+    FOREIGN KEY (team_id) REFERENCES Team(id),
+    FOREIGN KEY (position_code) REFERENCES PlayerPosition(code),
+    UNIQUE(match_id, player_id) ON CONFLICT REPLACE
+);
+
+CREATE TABLE IF NOT EXISTS MatchEvent (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id INTEGER NOT NULL,
+    player_id INTEGER,
+    event_type_code TEXT NOT NULL,
+    time TEXT NOT NULL,
+    details TEXT,
+    player_in_id INTEGER,
+    player_out_id INTEGER,
+    FOREIGN KEY (match_id) REFERENCES Match(id),
+    FOREIGN KEY (player_id) REFERENCES Player(id),
+    FOREIGN KEY (event_type_code) REFERENCES EventType(code),
+    FOREIGN KEY (player_in_id) REFERENCES Player(id),
+    FOREIGN KEY (player_out_id) REFERENCES Player(id)
+);
