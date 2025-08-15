@@ -1,0 +1,27 @@
+soccer_commentary_analyzer/output/*
+.env
+
+# Logs
+match-frontend/logs
+match-frontend/*.log
+match-frontend/npm-debug.log*
+match-frontend/yarn-debug.log*
+match-frontend/yarn-error.log*
+match-frontend/pnpm-debug.log*
+match-frontend/lerna-debug.log*
+
+match-frontend/node_modules
+match-frontend/dist
+match-frontend/dist-ssr
+match-frontend/*.local
+
+# Editor directories and files
+match-frontend/.vscode/*
+match-frontend/!.vscode/extensions.json
+match-frontend/.idea
+match-frontend/.DS_Store
+match-frontend/*.suo
+match-frontend/*.ntvs*
+match-frontend/*.njsproj
+match-frontend/*.sln
+match-frontend/*.sw?
