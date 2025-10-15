@@ -199,6 +199,80 @@ def insert_match_event(
     logger.info(f"Event: [{event['time']}] {event_type} by {event.get('player', 'N/A')}")
     return True
 
+def get_match_by_uuid(conn: sqlite3.Connection, match_uuid: str):
+    """Fetch match + teams + events + players by UUID."""
+    cursor = conn.cursor()
+    # Match + teams
+    cursor.execute("""
+        SELECT m.id, m.uuid, m.match_date, m.home_score, m.away_score,
+               ht.name AS home_team, at.name AS away_team
+        FROM Match m
+        JOIN Team ht ON m.home_team_id = ht.id
+        JOIN Team at ON m.away_team_id = at.id
+        WHERE m.uuid = ?
+    """, (match_uuid,))
+    match_row = cursor.fetchone()
+    if not match_row:
+        return None
+
+    match_id = match_row[0]
+    match_data = {
+        "match_id": match_row[1],
+        "match_date": match_row[2],
+        "home_team": match_row[5],
+        "away_team": match_row[6],
+        "score": {match_row[5]: match_row[3], match_row[6]: match_row[4]},
+    }
+
+    # Events
+    cursor.execute("""
+        SELECT me.time, me.event_type_code, p.name, me.details, 
+               pi.name AS player_in, po.name AS player_out, ml_team.name AS team
+        FROM MatchEvent me
+        LEFT JOIN Player p ON me.player_id = p.id
+        LEFT JOIN Player pi ON me.player_in_id = pi.id
+        LEFT JOIN Player po ON me.player_out_id = po.id
+        LEFT JOIN MatchLineup ml ON me.match_id = ml.match_id AND me.player_id = ml.player_id
+        LEFT JOIN Team ml_team ON ml.team_id = ml_team.id
+        WHERE me.match_id = ?
+        ORDER BY me.time
+    """, (match_id,))
+    events = []
+    for row in cursor.fetchall():
+        events.append({
+            "time": row[0],
+            "type": row[1],
+            "player": row[2],
+            "details": row[3],
+            "player_in": row[4],
+            "player_out": row[5],
+            "team": row[6],
+        })
+
+    # Players
+    cursor.execute("""
+        SELECT p.name, mt.name AS team, ml.jersey_number, ml.position_code
+        FROM MatchLineup ml
+        JOIN Player p ON ml.player_id = p.id
+        JOIN Team mt ON ml.team_id = mt.id
+        WHERE ml.match_id = ?
+    """, (match_id,))
+    players = [
+        {
+            "name": row[0],
+            "team": row[1],
+            "number": row[2],
+            "position": row[3],
+        }
+        for row in cursor.fetchall()
+    ]
+
+    return {
+        "match": match_data,
+        "events": events,
+        "players": players,
+    }
+
 def save_analysis_to_database(
     home_team_name: str,
     away_team_name: str,

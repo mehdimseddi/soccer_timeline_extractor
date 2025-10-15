@@ -28,7 +28,7 @@ from .utils.db_utils import get_all_team_names
 from .utils.visualization import save_analysis_to_excel, save_analysis_to_csv
 from .utils.match_utils import compute_match_score
 from .utils.db_setup import setup_enum_tables
-from .utils.db_operations import get_db_connection, get_team_name_by_id
+from .utils.db_operations import get_db_connection, get_match_by_uuid, get_team_name_by_id
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .utils.arabic import normalize_arabic_text
@@ -174,7 +174,7 @@ def get_analysis_history():
 
         history = [
             {
-                "match_id": r[0],
+                "match_uuid": r[0],
                 "home_team": r[1],
                 "away_team": r[2],
                 "match_date": r[3]
@@ -185,6 +185,46 @@ def get_analysis_history():
     except Exception as e:
         logger.error(f"Failed to fetch history: {e}")
         raise HTTPException(status_code=500, detail="Could not retrieve analysis history")
+
+@app.get(f"/{API_VERSION}/history/{{match_id}}")
+def get_match_details(match_id: str):
+    try:
+        with get_db_connection() as conn:
+            data = get_match_by_uuid(conn, match_id)
+        if not data:
+            raise HTTPException(status_code=404, detail="Match not found")
+
+        # Build artifact paths (relative to OUTPUT_DIR)
+        base_path = f"{match_id}/"
+        artifacts = {
+            "excel": f"{base_path}match.xlsx",
+            "events_csv": f"{base_path}events.csv",
+            "players_csv": f"{base_path}players.csv",
+            "vtt": None,
+            "commentary_txt": f"{base_path}commentary.txt",
+        }
+
+        # Check if VTT exists
+        vtt_full_path = os.path.join(OUTPUT_DIR, match_id, "commentary.vtt")
+        if os.path.exists(vtt_full_path):
+            artifacts["vtt"] = f"{base_path}commentary.vtt"
+
+        return {
+            "match_id": match_id,
+            "home_team": data["match"]["home_team"],
+            "away_team": data["match"]["away_team"],
+            "match_date": data["match"]["match_date"],
+            "score": data["match"]["score"],
+            "events": data["events"],
+            "players": data["players"],
+            "artifacts": artifacts,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to fetch match {match_id}: {e}")
+        raise HTTPException(status_code=500, detail="Could not retrieve match details")
     
 @app.post(f"/{API_VERSION}/analyze", response_model=AnalyzeResponse)
 def analyze_commentary(request: AnalyzeRequest, expand: Optional[str] = None):
