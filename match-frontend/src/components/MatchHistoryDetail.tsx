@@ -53,6 +53,9 @@ export default function MatchHistoryDetail() {
                             ? `${API_BASE_URL}${API_PREFIX}/artifacts/${res.artifacts.commentary_txt}`
                             : undefined,
                     },
+                    home_team_logo_url: res.home_team_logo_url,
+                    away_team_logo_url: res.away_team_logo_url,
+                    // We'll handle VTT fetching separately
                     transcript_cues: res.artifacts.vtt
                         ? [] // We'll fetch VTT separately if needed, or backend can send cues
                         : [],

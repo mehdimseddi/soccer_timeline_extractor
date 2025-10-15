@@ -218,6 +218,8 @@ def get_match_details(match_id: str):
             "events": data["events"],
             "players": data["players"],
             "artifacts": artifacts,
+            "home_team_logo_url":_select_team_logo_url(data["match"]["home_team"]),
+            "away_team_logo_url":_select_team_logo_url(data["match"]["away_team"]),
         }
 
     except HTTPException:
