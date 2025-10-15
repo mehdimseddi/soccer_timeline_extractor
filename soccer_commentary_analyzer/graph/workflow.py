@@ -13,7 +13,7 @@ from ..nodes.sync_events_with_final_players import sync_events_with_final_player
 from ..config import logger
 from ..state_type.types_utils import CommentaryState
 from ..nodes.reviewer import reviewer_node
-
+from ..nodes.finalize_team_codes_node import finalize_team_codes_node
 
 def should_identify_teams(state: CommentaryState) -> str:
     if state.get("teams") and state["teams"].get("home_team") and state["teams"].get("away_team"):
@@ -60,6 +60,7 @@ def build_soccer_analysis_graph():
     workflow.add_node("deduplicate_players", deduplicate_players_node)
     workflow.add_node("deduplicate_events", deduplicate_events_node)
     workflow.add_node("sync_events_with_final_players", sync_events_with_final_players_node)
+    workflow.add_node("finalize_team_codes", finalize_team_codes_node)
 
     workflow.set_entry_point("clean_commentary")
     workflow.add_conditional_edges("clean_commentary", should_identify_teams, {"identify": "identify_teams", "skip": "extract_players"})
@@ -69,7 +70,9 @@ def build_soccer_analysis_graph():
     workflow.add_edge("deduplicate_players", "enforce_valid_team_composition")
     workflow.add_edge("enforce_valid_team_composition", "process_segments")
     workflow.add_edge("process_segments", "sync_events_with_final_players")
-    workflow.add_edge("sync_events_with_final_players", "deduplicate_events")
+    # workflow.add_edge("sync_events_with_final_players", "deduplicate_events")
+    workflow.add_edge("sync_events_with_final_players", "finalize_team_codes")
+    workflow.add_edge("finalize_team_codes", "deduplicate_events")
     workflow.add_edge("deduplicate_events", "validate_analysis")
     workflow.add_conditional_edges("validate_analysis", should_retry_validation, {"retry": "process_segments", "done": "final_deduplicate_events"})
 
