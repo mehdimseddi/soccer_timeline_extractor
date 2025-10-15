@@ -155,7 +155,37 @@ def _select_team_logo_url(team_name: Optional[str]) -> Optional[str]:
         pass
     return None
 
+@app.get(f"/{API_VERSION}/history")
+def get_analysis_history():
+    try:
+        with get_db_connection() as conn:
+            rows = conn.execute("""
+                SELECT 
+                    m.uuid,
+                    ht.name AS home_team,
+                    at.name AS away_team,
+                    m.match_date
+                FROM Match m
+                JOIN Team ht ON m.home_team_id = ht.id
+                JOIN Team at ON m.away_team_id = at.id
+                WHERE m.uuid IS NOT NULL
+                ORDER BY m.match_date DESC
+            """).fetchall()
 
+        history = [
+            {
+                "match_id": r[0],
+                "home_team": r[1],
+                "away_team": r[2],
+                "match_date": r[3]
+            }
+            for r in rows
+        ]
+        return {"history": history}
+    except Exception as e:
+        logger.error(f"Failed to fetch history: {e}")
+        raise HTTPException(status_code=500, detail="Could not retrieve analysis history")
+    
 @app.post(f"/{API_VERSION}/analyze", response_model=AnalyzeResponse)
 def analyze_commentary(request: AnalyzeRequest, expand: Optional[str] = None):
     try:
@@ -188,8 +218,10 @@ def analyze_commentary(request: AnalyzeRequest, expand: Optional[str] = None):
                 commentary = file.read()
 
         # Run analysis
+        match_uuid = str(uuid.uuid4())
         
         initial_state = {
+            "match_uuid": match_uuid,
             "original_commentary":  commentary,
             "teams": {
                 "home_team": home_team,
@@ -241,7 +273,7 @@ def analyze_commentary(request: AnalyzeRequest, expand: Optional[str] = None):
         # Save analysis
         analysis_results = {
             'match_info': {
-                'match_id': str(uuid.uuid4()),
+                'match_id': match_uuid,
                 'home_team': home,
                 'away_team': away,
                 'date': datetime.now().strftime("%Y-%m-%d")
@@ -252,12 +284,18 @@ def analyze_commentary(request: AnalyzeRequest, expand: Optional[str] = None):
 
         xlsx_path = save_analysis_to_excel(analysis_results)
         events_csv, players_csv = save_analysis_to_csv(analysis_results)
+
+        # Save plain-text transcript
+        match_id = analysis_results['match_info']['match_id']
+        txt_path = os.path.join(OUTPUT_DIR, match_id, "commentary.txt")
+        os.makedirs(os.path.dirname(txt_path), exist_ok=True)
+        with open(txt_path, "w", encoding="utf-8") as f:
+            f.write(commentary)
+
         logger.info(
             f"Analysis complete: events={len(match_analysis.events)}, players={len(match_analysis.players)}"
         )
 
-        # Optional: Save to DB
-        # insert_match(...)  # Uncomment and implement if needed
 
         resp = AnalyzeResponse(
             match_id=analysis_results['match_info']['match_id'],
@@ -383,6 +421,7 @@ async def analyze_audio_commentary(
         cues = build_cues_from_chunks(chunks)
         updated_artifacts = response.artifacts.model_copy(update={"vtt": vtt_path})
         response = response.model_copy(update={"artifacts": updated_artifacts, "commentary": raw_text, "transcript_cues": cues})
+
         # Cleanup temp file after response
         background_tasks.add_task(os.remove, temp_file_path)
         return response

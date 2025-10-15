@@ -5,6 +5,7 @@ from ..models.schemas import PlayerInfo, FootballEvent
 
 class CommentaryState(TypedDict):
     """State object for the LangGraph workflow"""
+    match_uuid: str
     original_commentary: str
     cleaned_commentary: str
     teams: Optional[dict]

@@ -97,7 +97,8 @@ def compile_analysis_node(state: CommentaryState) -> CommentaryState:
                 away_team_name=away_team,
                 match_date=match_date,
                 events=enhanced_events,
-                players=deduped_players
+                players=deduped_players,
+                match_uuid=state["match_uuid"]
             )
             logger.info(f"Match saved to database: {home_team} vs {away_team}")
         except Exception as e:

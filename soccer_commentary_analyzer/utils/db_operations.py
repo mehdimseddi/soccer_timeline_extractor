@@ -74,7 +74,8 @@ def insert_match(
     away_team_name: str,
     match_date: str,
     home_score: Optional[int] = None,
-    away_score: Optional[int] = None
+    away_score: Optional[int] = None,
+    match_uuid: Optional[str] = None
 ) -> Optional[int]:
     """Insert match only if both teams exist. Scores are optional."""
     home_team_id = get_team_id(conn, home_team_name)
@@ -92,16 +93,14 @@ def insert_match(
     a_score = away_score if away_score is not None else 0
 
     cursor = conn.cursor()
-    cursor.execute(
-        """
+    cursor.execute("""
         INSERT INTO Match (
-            home_team_id, away_team_id, match_date, home_score, away_score
-        ) VALUES (?, ?, ?, ?, ?)
-        """,
-        (home_team_id, away_team_id, match_date, h_score, a_score)
-    )
+            home_team_id, away_team_id, match_date, home_score, away_score, uuid
+        ) VALUES (?, ?, ?, ?, ?, ?)
+    """, (home_team_id, away_team_id, match_date, h_score, a_score, match_uuid))
+    
     match_id = cursor.lastrowid
-    logger.info(f"Match created: ID {match_id} → {home_team_name} {h_score} - {a_score} {away_team_name}")
+    logger.info(f"Match created: ID {match_id} , UUID {match_uuid} → {home_team_name} {h_score} - {a_score} {away_team_name}")
     return match_id
 
 def insert_match_lineup(
@@ -205,7 +204,8 @@ def save_analysis_to_database(
     away_team_name: str,
     match_date: str,
     events: List[Dict],
-    players: List[Dict]
+    players: List[Dict],
+    match_uuid: Optional[str] = None
 ):
     # Compute score
     score = compute_match_score(events, home_team=home_team_name, away_team=away_team_name)
@@ -220,7 +220,8 @@ def save_analysis_to_database(
             away_team_name=away_team_name,
             match_date=match_date,
             home_score=home_score,
-            away_score=away_score
+            away_score=away_score,
+            match_uuid=match_uuid  
         )
         if not match_id:
             logger.error("Aborting: Could not create match due to invalid teams.")

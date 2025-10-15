@@ -69,3 +69,5 @@ CREATE TABLE IF NOT EXISTS MatchEvent (
     FOREIGN KEY (player_in_id) REFERENCES Player(id),
     FOREIGN KEY (player_out_id) REFERENCES Player(id)
 );
+
+ALTER TABLE Match ADD COLUMN uuid TEXT UNIQUE;

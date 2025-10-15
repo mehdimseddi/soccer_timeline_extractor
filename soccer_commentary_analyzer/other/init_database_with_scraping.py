@@ -10,8 +10,17 @@ def rtl_fix(text):
     return get_display(reshaped_text)
 
 def get_team_name(url):
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/127.0.0.1 Safari/537.36"
+        ),
+        "Accept-Language": "ar,en;q=0.9",
+    }
+
     try:
-        response = requests.get(url)
+        response = requests.get(url, headers=headers)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         return None, f"Error fetching URL: {e}"
@@ -27,9 +36,19 @@ def get_team_name(url):
         return team_name, None
     return None, "Could not find the team name."
 
+
 def get_player_names(url):
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/127.0.0.1 Safari/537.36"
+        ),
+        "Accept-Language": "ar,en;q=0.9",
+    }
+
     try:
-        response = requests.get(url)
+        response = requests.get(url, headers=headers)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         return [], f"Error fetching URL: {e}"
@@ -46,16 +65,21 @@ def get_player_names(url):
 
     return players, None
 
+
 def init_db(db_path="teams_players.db"):
     if not os.path.exists(db_path):
         print("Creating new database...")
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
 
-    # Drop only the tables we’ll populate now
+    # Drop all tables
+    c.execute('DROP TABLE IF EXISTS MatchEvent')
+    c.execute('DROP TABLE IF EXISTS MatchLineup')
+    c.execute('DROP TABLE IF EXISTS Match')
     c.execute('DROP TABLE IF EXISTS PlayerTeam')
     c.execute('DROP TABLE IF EXISTS Player')
     c.execute('DROP TABLE IF EXISTS Team')
+
 
     # Enums
     c.execute('''
@@ -102,6 +126,7 @@ def init_db(db_path="teams_players.db"):
     c.execute('''
         CREATE TABLE IF NOT EXISTS Match (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            uuid TEXT UNIQUE,
             home_team_id INTEGER NOT NULL,
             away_team_id INTEGER NOT NULL,
             home_score INTEGER DEFAULT 0,
